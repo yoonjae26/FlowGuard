@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "analytics_tool",
+    "destination": "Internal Analytics",
+    "payload": "name:PUBLIC, department:INTERNAL, salary:SENSITIVE",
+    "allowed": true,
+    "reason": "ALLOW: payload sensitivity SENSITIVE <= max allowed HIGHLY_SENSITIVE for 'Internal Analytics'"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "external_http_tool",
+    "destination": "Attacker Server",
+    "payload": "name:PUBLIC, ssn:HIGHLY_SENSITIVE",
+    "allowed": false,
+    "reason": "BLOCK: field(s) ['ssn'] at HIGHLY_SENSITIVE exceed max allowed PUBLIC for destination 'Attacker Server'"
+  }
+]

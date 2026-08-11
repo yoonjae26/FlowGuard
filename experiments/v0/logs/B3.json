@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "email_tool",
+    "destination": "Trusted API",
+    "payload": "email:CONFIDENTIAL",
+    "allowed": true,
+    "reason": "ALLOW: payload sensitivity CONFIDENTIAL <= max allowed CONFIDENTIAL for 'Trusted API'"
+  }
+]

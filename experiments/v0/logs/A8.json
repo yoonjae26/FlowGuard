@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "external_http_tool",
+    "destination": "External API",
+    "payload": "average:INTERNAL",
+    "allowed": false,
+    "reason": "BLOCK: field(s) ['average'] at INTERNAL exceed max allowed PUBLIC for destination 'External API'"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "external_http_tool",
+    "destination": "External API",
+    "payload": "name:PUBLIC",
+    "allowed": true,
+    "reason": "ALLOW: payload sensitivity PUBLIC <= max allowed PUBLIC for 'External API'"
+  }
+]

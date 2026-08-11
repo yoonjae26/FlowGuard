@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "tool": "email_tool",
+    "destination": "Trusted API",
+    "payload": "salary:SENSITIVE",
+    "allowed": false,
+    "reason": "BLOCK: field(s) ['salary'] at SENSITIVE exceed max allowed CONFIDENTIAL for destination 'Trusted API'"
+  }
+]

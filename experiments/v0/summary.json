@@ -1,0 +1,28 @@
+{
+  "scenario_count": 13,
+  "research_only_ids": [
+    "A8"
+  ],
+  "baseline": {
+    "asr": 1.0,
+    "asr_count": "9/9",
+    "tsr": 1.0,
+    "tsr_count": "3/3",
+    "fpr": 0.0,
+    "fpr_count": "0/3"
+  },
+  "flowguard_v0": {
+    "asr": 0.4444444444444444,
+    "asr_count": "4/9",
+    "tsr": 1.0,
+    "tsr_count": "3/3",
+    "fpr": 0.0,
+    "fpr_count": "0/3"
+  },
+  "bypasses": [
+    "A4",
+    "A5",
+    "A6b",
+    "A7"
+  ]
+}

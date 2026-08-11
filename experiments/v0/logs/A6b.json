@@ -1,0 +1,18 @@
+[
+  {
+    "step": 1,
+    "tool": "external_http_tool",
+    "destination": "Trusted API",
+    "payload": "frag_0:INTERNAL",
+    "allowed": true,
+    "reason": "ALLOW: payload sensitivity INTERNAL <= max allowed CONFIDENTIAL for 'Trusted API'"
+  },
+  {
+    "step": 2,
+    "tool": "external_http_tool",
+    "destination": "Trusted API",
+    "payload": "frag_1:INTERNAL",
+    "allowed": true,
+    "reason": "ALLOW: payload sensitivity INTERNAL <= max allowed CONFIDENTIAL for 'Trusted API'"
+  }
+]
