@@ -1,0 +1,24 @@
+{
+  "cells": 22,
+  "v0_leaks": 16,
+  "v1_leaks": 0,
+  "v0_leak_cells": [
+    "H1-Encoding",
+    "H3-Encoding",
+    "H3-Fragmentation",
+    "H3-Recombination",
+    "H5-Encoding",
+    "H5-Fragmentation",
+    "H5-Recombination",
+    "H10-Encoding",
+    "H10-Fragmentation",
+    "H10-Recombination",
+    "H15-Encoding",
+    "H15-Fragmentation",
+    "H15-Recombination",
+    "H20-Encoding",
+    "H20-Fragmentation",
+    "H20-Recombination"
+  ],
+  "v1_leak_cells": []
+}

@@ -44,6 +44,16 @@ def fragment(data: Data, field: str, n: int = 2, prefix: str = "frag") -> list[D
     return [Data(fields={f"{prefix}_{i}": chunk}) for i, chunk in enumerate(chunks)]
 
 
+def passthrough(data: Data) -> Data:
+    """Identity transform: same field names, same values. Used only to pad
+    chain length (simulate extra intermediate agent actions -- logging,
+    reformatting, re-summarizing) WITHOUT altering field identity. This is
+    the control arm for the horizon x transformation matrix: it isolates
+    "many hops" from "label-losing transformation" so the two can be
+    tested independently."""
+    return Data(fields=dict(data.fields))
+
+
 def aggregate(data_list: list[Data], field: str, new_field: str = "average") -> Data:
     values = [d.fields[field] for d in data_list if field in d.fields]
     avg = statistics.mean(values) if values else None

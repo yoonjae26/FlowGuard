@@ -36,6 +36,7 @@ _UNGATED_TOOLS = {
     "transform.to_json",
     "transform.fragment",
     "transform.aggregate",
+    "transform.passthrough",
 }
 
 
@@ -121,6 +122,10 @@ class AgentV1:
                 args.get("new_field", "average"),
             )
             return self.store.derive(list(parents), raw.fields, "aggregate")
+        if tool_name == "transform.passthrough":
+            parent: ProvenanceData = args["data"]
+            raw = transform.passthrough(Data(fields=parent.fields))
+            return self.store.derive([parent], raw.fields, "passthrough")
         raise ValueError(f"Unknown ungated tool: {tool_name}")
 
     def _as_single(self, output) -> ProvenanceData:

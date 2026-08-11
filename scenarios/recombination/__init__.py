@@ -1,0 +1,3 @@
+from .recombination_scenarios import SCENARIOS
+
+__all__ = ["SCENARIOS"]

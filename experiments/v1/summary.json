@@ -1,29 +1,65 @@
 {
-  "scenario_count": 13,
+  "scenario_count": 75,
   "research_only_ids": [
     "A8"
   ],
   "flowguard_v0": {
-    "asr": 0.4444444444444444,
-    "asr_count": "4/9",
-    "tsr": 1.0,
-    "tsr_count": "3/3",
-    "fpr": 0.0,
-    "fpr_count": "0/3"
+    "asr": 0.6060606060606061,
+    "asr_count": "40/66",
+    "tsr": 0.875,
+    "tsr_count": "7/8",
+    "fpr": 0.125,
+    "fpr_count": "1/8"
   },
   "flowguard_v1": {
     "asr": 0.0,
-    "asr_count": "0/9",
+    "asr_count": "0/66",
     "tsr": 1.0,
-    "tsr_count": "3/3",
+    "tsr_count": "8/8",
     "fpr": 0.0,
-    "fpr_count": "0/3"
+    "fpr_count": "0/8"
   },
   "fixed_by_provenance": [
     "A4",
     "A5",
+    "ENC1",
+    "ENC2",
+    "ENC3",
+    "SER1",
+    "SER2",
+    "SER3",
+    "SER4",
     "A6b",
-    "A7"
+    "FRAG1",
+    "FRAG2",
+    "FRAG3",
+    "FRAG5",
+    "REC1",
+    "REC2",
+    "REC3",
+    "REC4",
+    "MS1",
+    "MS2",
+    "MS3",
+    "MS4",
+    "MS5",
+    "A7",
+    "HM-H1-Encoding",
+    "HM-H3-Encoding",
+    "HM-H3-Fragmentation",
+    "HM-H3-Recombination",
+    "HM-H5-Encoding",
+    "HM-H5-Fragmentation",
+    "HM-H5-Recombination",
+    "HM-H10-Encoding",
+    "HM-H10-Fragmentation",
+    "HM-H10-Recombination",
+    "HM-H15-Encoding",
+    "HM-H15-Fragmentation",
+    "HM-H15-Recombination",
+    "HM-H20-Encoding",
+    "HM-H20-Fragmentation",
+    "HM-H20-Recombination"
   ],
   "still_bypassed_in_v1": []
 }

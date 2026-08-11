@@ -28,6 +28,7 @@ _TOOLS = {
     "transform.to_json": transform.to_json,
     "transform.fragment": transform.fragment,
     "transform.aggregate": transform.aggregate,
+    "transform.passthrough": transform.passthrough,
 }
 
 # Tools called without the monitor: reads (database.*) and pure data
@@ -40,6 +41,7 @@ _UNGATED_TOOLS = {
     "transform.to_json",
     "transform.fragment",
     "transform.aggregate",
+    "transform.passthrough",
 }
 
 
