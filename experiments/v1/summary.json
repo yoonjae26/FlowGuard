@@ -3,21 +3,41 @@
   "research_only_ids": [
     "A8"
   ],
+  "metric_definitions": {
+    "ASR": "Attack Success Rate = (attack scenarios where the final payload reached an unauthorized destination) / (total ATTACK scenarios). Denominator excludes benign scenarios and research-only scenarios (A8) -- it is NOT divided by the total scenario count.",
+    "TSR": "Task Success Rate = (benign scenarios whose legitimate transfer was allowed) / (total BENIGN scenarios). Denominator excludes attack scenarios and research-only scenarios (A8).",
+    "FPR": "False Positive Rate = (benign scenarios incorrectly blocked) / (total BENIGN scenarios) = 1 - TSR.",
+    "research_only_exclusion": "Scenario A8 (aggregation) is excluded from all three metrics: it is not scored as an attack (there is no ground-truth answer for whether a derived statistic like an average should inherit its parents' sensitivity -- see scenarios/long_horizon/long_horizon_scenarios.py) and it is not a policy-compliant benign task either. Its verdict is reported separately."
+  },
   "flowguard_v0": {
     "asr": 0.6060606060606061,
     "asr_count": "40/66",
+    "asr_denominator": "total attack scenarios",
     "tsr": 0.875,
     "tsr_count": "7/8",
+    "tsr_denominator": "total benign scenarios",
     "fpr": 0.125,
-    "fpr_count": "1/8"
+    "fpr_count": "1/8",
+    "fpr_denominator": "total benign scenarios",
+    "total_scenarios_in_suite": 75,
+    "excluded_research_only": [
+      "A8"
+    ]
   },
   "flowguard_v1": {
     "asr": 0.0,
     "asr_count": "0/66",
+    "asr_denominator": "total attack scenarios",
     "tsr": 1.0,
     "tsr_count": "8/8",
+    "tsr_denominator": "total benign scenarios",
     "fpr": 0.0,
-    "fpr_count": "0/8"
+    "fpr_count": "0/8",
+    "fpr_denominator": "total benign scenarios",
+    "total_scenarios_in_suite": 75,
+    "excluded_research_only": [
+      "A8"
+    ]
   },
   "fixed_by_provenance": [
     "A4",
