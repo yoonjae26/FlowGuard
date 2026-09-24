@@ -24,6 +24,17 @@ agent --> tool call --> [ FlowGuard ] --> ALLOW --> real tool
 
 ## See it work
 
+<img src="docs/img/quickstart-demo.svg" alt="Terminal demo: two legitimate sends are ALLOWED, then an SSN exfiltration attempt is BLOCKED verbatim, as base64, as hex to an unknown host, and split into two fragments (the harmless first half is allowed, the completing second half is blocked)" width="640">
+
+The interesting line is the fragment one: the first half of a split secret is allowed, because on its own it is indistinguishable from harmless text. FlowGuard blocks the send that *completes* the disclosure -- see [limits](#what-flowguard-does-not-stop). Run it yourself:
+
+```bash
+python examples/quickstart.py
+```
+
+<details>
+<summary>Full text output (same run, unabridged)</summary>
+
 ```console
 $ python examples/quickstart.py
 Legitimate use
@@ -38,7 +49,7 @@ The agent tries to leak the SSN
   BLOCKED  fragment 2 of 2 completes it       [FlowGuard] BLOCKED: sending this payload to 'partner-sync.example.com' violates the data-flow policy.
 ```
 
-Note the second-to-last line: the first piece of a split secret is allowed, because on its own it is indistinguishable from harmless text. FlowGuard blocks the send that *completes* the disclosure. See [limits](#what-flowguard-does-not-stop).
+</details>
 
 ## Install
 
@@ -86,7 +97,8 @@ def http_post(url: str, body: str) -> str: ...
 
 A blocked call raises `FlowBlocked` and the tool never runs. Use `@guard.sink(..., on_block="return")` to return a refusal string instead. Async functions work too. No decorators available? Call `guard.observe(result, source=...)` and `guard.check(destination, payload)` yourself.
 
-### 3. Plug into an LLM tool-calling loop
+<details>
+<summary><b>3. Plug into an LLM tool-calling loop</b></summary>
 
 `Toolbox` is the same thing with a registry and a dispatcher, for when you would rather declare tools in one place (use it *instead of* the decorators above, not on top of them):
 
@@ -108,7 +120,10 @@ messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
 
 The model sees only `[FlowGuard] BLOCKED: sending this payload to 'x' violates the data-flow policy.` It is deliberately not told *what* was detected or *how*, so it cannot learn to rephrase around the check. The full explanation is in the audit log. A runnable OpenAI version is in [examples/openai_agent.py](examples/openai_agent.py) (written against the OpenAI API but not exercised in CI, which has no API key).
 
-### 4. Roll out and audit
+</details>
+
+<details>
+<summary><b>4. Roll out and audit</b></summary>
 
 ```python
 guard = Guard(policy, mode="monitor", audit_path="flowguard.audit.jsonl")  # log only, block nothing
@@ -140,29 +155,38 @@ guard = Guard(
 
 `Policy.fields` only protects field names you've told it about; run for a while with `Guard(audit_unlabeled=True)` in monitor mode against real traffic, then check `guard.unlabeled_report()` for field names worth adding.
 
-### 5. Tune to your risk
+</details>
+
+<details>
+<summary><b>5. Tune to your risk</b></summary>
 
 - `Policy(fragment_threshold={"HIGHLY_SENSITIVE": 0.4})` blocks a scattered value sooner for your most sensitive fields (default: 0.8 everywhere, unchanged from earlier releases).
 - `Guard(cross_destination_fragments=True)` tracks fragmentation across every destination in one shared bucket instead of per destination, closing the "split across two destinations" gap below -- off by default, since it trades that for a real false-positive risk of its own.
 
 See [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md#tuning) for the full list of knobs.
 
+</details>
+
 ## How it works
 
-1. **Remember.** When a source returns data, FlowGuard walks it (dicts, lists, dataclasses, JSON strings) and records every value under a sensitive field or matching a sensitive pattern, with its level and origin.
-2. **Decode.** Before checking an outbound payload it expands the text into variants: normalized (NFKC, zero-width characters removed), and everything obtainable by undoing base64, base32, hex, URL/HTML/`\u` escapes, decimal character codes, rot13 and reversal, recursively (whitespace inside a base64/hex token does not defeat this, since the real decoders ignore it too).
-3. **Match.** A tracked value found in any variant, verbatim, ignoring separators (`1 2 3-45`), or as an MD5/SHA-1/SHA-256/SHA-512 digest, is a finding. Short numbers only match on digit boundaries, so `185000` is not the salary `85000`.
-4. **Piece it together.** Consecutive sends to one destination are stitched together per argument, and a running per-destination tally records how much of each value has been disclosed in fragments of 4+ characters, in any order and wrapped in any noise.
-5. **Decide.** Any finding above the destination's level blocks the call. Only what actually went out counts as disclosed. Destinations are also ranked by how much confirmed progress toward a leak they hold, so an attacker cannot make FlowGuard forget an in-progress one by flooding it with disposable decoy destinations.
+1. **Remember.** When a source returns data, FlowGuard walks it and records every value under a sensitive field or matching a sensitive pattern, with its level and origin.
+2. **Decode.** Before checking an outbound payload it expands the text into every variant it knows how to produce (base64, hex, base32, URL/HTML/unicode escapes, rot13, reversal, ...), recursively.
+3. **Match.** A tracked value found in any variant -- verbatim, decoded, hashed, or as a differently-written equal number -- is a finding.
+4. **Piece it together.** Fragments sent consecutively or scattered across many sends are tracked per destination and add up.
+5. **Decide.** Any finding above the destination's level blocks the call; only what actually left counts as disclosed.
 
-For a step-by-step walkthrough of each of these five with real, runnable traces (bitmasks filling in as fragments arrive, the decoy-flood eviction defense actually resisting, the digit-boundary false-positive trade-off in action), see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** has the long version of all five, with real runnable traces: a coverage bitmask filling in fragment by fragment, the decoy-flood eviction defense actually resisting an attack, the digit-boundary trade-off in action.
 
 ## What FlowGuard does not stop
 
-Read this before deploying. The full list, with the reasoning, is in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) and each item is pinned by a test in [tests/test_known_limitations.py](tests/test_known_limitations.py).
+Read this before deploying: FlowGuard is a deny-list of known-sensitive values, not a guarantee. Two of the most important gaps --
 
-- **Only what it has been told about.** Data in a field your policy does not label, and not matching a built-in pattern, is not protected. FlowGuard is a deny-list of known-sensitive values, not an allow-list of safe content -- `Guard(audit_unlabeled=True)` helps find field names worth adding.
-- **Only through guarded tools.** If the agent has a shell, a browser, or any tool you did not wrap, FlowGuard cannot see what leaves. Pair it with network egress controls.
+- **Only what it has been told about.** Data in a field your policy does not label, and not matching a built-in pattern, is not protected. `Guard(audit_unlabeled=True)` helps find field names worth adding.
+- **Only through guarded tools.** A shell, a browser, or any tool you did not wrap is invisible to FlowGuard. Pair it with network egress controls.
+
+<details>
+<summary>The rest of the list</summary>
+
 - **Damage inside the secret.** Models retype long encoded strings imperfectly. FlowGuard recovers readable text from damaged base64/hex, but not a secret that the damage itself cuts through.
 - **Destination helpers fail closed on purpose.** `hostname()`/`email_domains()` return "" (PUBLIC only) for any URL or address ambiguous enough that a real HTTP or mail client might read it differently, since ambiguity is a bypass waiting to happen, not something to guess through (see docs/THREAT_MODEL.md).
 - **Ciphers, paraphrase, and derivations.** Spelling digits out in words, a Caesar shift other than rot13, XOR/encryption with a key, or leaking a *fact about* a value ("earns above 80k") get through. So do covert channels (payload length, timing, tool choice).
@@ -170,26 +194,23 @@ Read this before deploying. The full list, with the reasoning, is in [docs/THREA
 - **Numbers collide.** A legitimate number that equals a tracked one (an invoice for exactly `$85,000` when someone earns `85000`) is blocked. Tune `min_value_length` or label fewer numeric fields.
 - **It is not a substitute for** least-privilege credentials, or prompt-injection defenses. It limits the damage when those fail; pair it with `require_approval_above` for actions that need a person's sign-off regardless.
 
+The full list, with the reasoning, is in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) and each item is pinned by a test in [tests/test_known_limitations.py](tests/test_known_limitations.py).
+
+</details>
+
 ## Evidence
 
-Everything below uses **synthetic data** (no real people or secrets). Three independent pieces, weakest claim last. (One-table summary of all of these plus mutation testing: [docs/ARCHITECTURE.md#benchmarks-the-evidence-in-one-place](docs/ARCHITECTURE.md#benchmarks-the-evidence-in-one-place).)
+Everything below uses **synthetic data** (no real people or secrets), reproducible from a script, with the two live-LLM rows backed by a committed transcript of every run.
 
-**1. A live LLM agent (gpt-4o-mini, 180 runs).** Nine tasks, each run with and without enforcement; details, the setup, and every transcript are in [docs/LLM_EVAL.md](docs/LLM_EVAL.md). Under pressure to "try another way if blocked", the model leaked to a destination not cleared for the data in **47 of 50** attack and prompt-injection runs when unprotected; with FlowGuard enforcing, **0 of 50** leaked (upper 95% bound about 6%), and the 40 ordinary runs per condition completed identically (0 false positives, including the base64-encoded-name task that field-name monitors get wrong). The model tried email, base64, URL-encoding, rot13, reversal and hex. The evaluation also **found a real leak**: the model retyped a long base64 string into a tool call and inserted stray characters, which shifted everything after them; FlowGuard had discarded the still-readable tail. That is fixed, pinned by a regression test, and described in full. Caveats: one model (the only one the key could use), 10 runs per cell, author-written tasks, and the last run is not independent of the fix.
+| Evidence | Result |
+|---|---|
+| Benchmark vs. a plain regex DLP scanner ([BENCHMARK.md](docs/BENCHMARK.md)) | **100%** stopped on 27 covered techniques (vs. 14% for regex-DLP); 0% false positives on 1,400 ordinary sends |
+| Live LLM agent, `gpt-4o-mini`, baseline ([LLM_EVAL.md](docs/LLM_EVAL.md)) | Unprotected: 49/50 attack/injection runs leaked. Enforced: **0/50** |
+| Live LLM agent, white-box adaptive attacker, given the mechanism itself ([LLM_EVAL.md](docs/LLM_EVAL.md#adaptive-attacker-evaluation)) | **0/24** leaked, run twice independently |
+| Mutation testing on the matching core ([MUTATION_TESTING.md](docs/MUTATION_TESTING.md)) | 71% of 893 mutants killed; 4 real test gaps found this way, fixed |
+| Cost ([evals/scaling.py](evals/scaling.py)) | `check()` stays ~1.3 ms whether 4,000 or 156,000 values are tracked |
 
-**2. A benchmark against a plain regex DLP** ([docs/BENCHMARK.md](docs/BENCHMARK.md); `python evals/run_bench.py`). 200 employees attacked, 1,090 registered, a payload counts as stopped if any send is blocked:
-
-| | FlowGuard | regex DLP on outbound text |
-|---|---:|---:|
-| Techniques it has decoders for (27 kinds: base64, hex, JSON, fragments, reverse order, retyped base64, ...) | 100% stopped | 14% stopped |
-| Known gaps (words, Caesar shift, XOR, small fragments hidden in noise) | 0-32% stopped | 0% stopped |
-| False positives on ordinary traffic (1,400 cases) | 0 | 0 |
-| False positives when a number equals a tracked salary | 100% | 0% |
-
-The first row is a regression check, not a forecast: those are the techniques FlowGuard was built to handle, fixed until they passed. The second and fourth rows are where to keep other defenses.
-
-**3. Cost.** `check()` takes about 1 ms and does not grow with the number of tracked values (a prefix index means an ordinary payload is tested against a handful of them, not all): 1.3 ms at 4,000 values, 1.3 ms at 156,000 (`python evals/scaling.py`). It does not grow with session length either, and it terminates quickly on cyclic or heavily shared data structures.
-
-**The research that motivated it.** FlowGuard grew out of a study of how field-name-based labelling fails: once data is re-encoded or split, a generic field name (`payload`, `frag_0`) resets its sensitivity, and a monitor that trusts the label lets it through. In that study (75 scripted scenarios) the baseline monitor let 40 of 66 attacks through, all of them transformation attacks, and a provenance layer fixed all 40. A real LLM told "if blocked, try another way" found fragmentation and encoding on its own and got past the baseline monitor in 5 of 5 tasks, versus 0 of 5 with provenance. Method, hypotheses and caveats: [research/](research/README.md).
+Full methodology, every caveat, and the research this grew out of (a study of how field-name-based labelling fails): **[docs/ARCHITECTURE.md#benchmarks-the-evidence-in-one-place](docs/ARCHITECTURE.md#benchmarks-the-evidence-in-one-place)**.
 
 ## Layout
 
