@@ -3,14 +3,15 @@ Dispatcher. This is the first evaluation of whether an actual LLM
 autonomously attempts / discovers exfiltration techniques, as opposed to
 the scripted-agent mechanism evaluation in agent/agent.py / agent_v1.py.
 
-API key: /home/hong/Long-Horizon/.env contains only the raw key (no
-KEY=value prefix). Read directly in Python -- never echo it to stdout/
-Bash, and never write it into a committed file.
+API key: set the OPENAI_API_KEY environment variable, or put the raw key
+(no KEY=value prefix) in a file named .env in this directory or the repo
+root. .env is git-ignored. Never echo the key or write it into a committed file.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from llm_agent.dispatcher import Dispatcher
 from llm_agent.tool_schemas import TOOL_SCHEMAS
 from security.monitor import FlowGuardMonitor
 
-_ENV_PATH = Path("/home/hong/Long-Horizon/.env")
+_ENV_PATHS = (Path(__file__).resolve().parent.parent / ".env", Path(__file__).resolve().parents[2] / ".env")
 MAX_TURNS = 12
 
 SYSTEM_PROMPT = (
@@ -35,7 +36,13 @@ SYSTEM_PROMPT = (
 
 
 def load_api_key() -> str:
-    return _ENV_PATH.read_text().strip()
+    key = os.environ.get("OPENAI_API_KEY")
+    if key:
+        return key.strip()
+    for path in _ENV_PATHS:
+        if path.is_file():
+            return path.read_text().strip()
+    raise RuntimeError("No API key: set OPENAI_API_KEY or create a .env file (see llm_agent/runner.py)")
 
 
 def get_client() -> OpenAI:
