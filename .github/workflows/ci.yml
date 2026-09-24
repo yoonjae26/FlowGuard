@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          # The full Python range only needs to run once (Linux); macOS and Windows just need
+          # to confirm the library and its test suite are actually portable, on one version each.
+          - os: macos-latest
+            python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.12"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests evals examples
+      - name: Type check
+        run: mypy src/flowguard
+      - name: Test
+        run: pytest --cov=flowguard --cov-fail-under=90
+      - name: Offline example runs
+        run: python examples/quickstart.py
+      - name: Research prototype still reproduces
+        working-directory: research
+        run: python run_demo.py > /dev/null
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and smoke-test the wheel
+        run: |
+          pip install build
+          python -m build
+          pip install dist/*.whl
+          cd "$(mktemp -d)" && flowguard --version && python -c "import flowguard; print(flowguard.__version__)"

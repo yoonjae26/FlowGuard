@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flowguard"
+version = "0.1.0"
+description = "Data-flow guard for AI agents: stop sensitive data leaking out through tool calls, even after encoding or fragmentation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["ai-agents", "llm", "security", "data-loss-prevention", "taint-tracking", "prompt-injection"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8", "pytest-cov", "hypothesis>=6.100", "ruff>=0.5", "mypy>=1.10", "types-PyYAML", "build",
+    "requests>=2.31", "httpx>=0.27", "urllib3>=2",  # test_destinations.py cross-checks against these
+    "pre-commit>=3.5",
+]
+research = ["openai>=1.0"]
+llm-eval = ["openai>=1.0"]
+mutation = ["mutmut>=3.0"]
+
+[project.scripts]
+flowguard = "flowguard.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flowguard"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/examples", "/docs", "/evals", "/README.md", "/LICENSE", "/CHANGELOG.md", "/SECURITY.md", "/CONTRIBUTING.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+xfail_strict = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = ["research"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"evals/llm_eval.py" = ["E501"]
+"evals/llm_adaptive.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/flowguard"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[tool.mutmut]
+# Scoped to the hand-written matching/decoding core (taint.py, expand.py, detect.py): the
+# highest-value, most security-critical code, and small enough to run in a few minutes.
+# See docs/MUTATION_TESTING.md for how to run this and what the results mean.
+source_paths = ["src/flowguard"]
+do_not_mutate = [
+    "src/flowguard/guard.py", "src/flowguard/policy.py", "src/flowguard/decision.py",
+    "src/flowguard/cli.py", "src/flowguard/toolbox.py", "src/flowguard/audit.py",
+    "src/flowguard/__init__.py", "src/flowguard/__main__.py", "src/flowguard/labels.py",
+]
+# mutmut's own instrumentation marker is non-ASCII, which trips this project's own
+# ASCII-source hygiene check on the copied sandbox -- irrelevant noise for mutation testing.
+pytest_add_cli_args_test_selection = ["tests/", "--ignore=tests/test_hygiene.py"]
+also_copy = ["examples/"]

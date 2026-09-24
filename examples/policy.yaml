@@ -1,0 +1,30 @@
+# FlowGuard policy for an HR assistant agent.
+#
+# Levels, lowest to highest: PUBLIC, INTERNAL, CONFIDENTIAL, SENSITIVE, HIGHLY_SENSITIVE.
+# A destination may receive data up to (and including) its own level.
+
+destinations:
+  hr-db.corp.example: HIGHLY_SENSITIVE   # system of record
+  payroll.corp.example: SENSITIVE
+  "*.corp.example": CONFIDENTIAL    # other internal services (most restrictive glob wins)
+  partner-sync.example.com: CONFIDENTIAL
+  # Anything not listed -- including every unknown host -- may only receive PUBLIC data.
+
+# Field names whose values are tainted whenever a tool returns them (case-insensitive).
+fields:
+  ssn: HIGHLY_SENSITIVE
+  password: HIGHLY_SENSITIVE
+  api_key: HIGHLY_SENSITIVE
+  salary: SENSITIVE
+  performance_review: SENSITIVE
+  email: CONFIDENTIAL
+  phone: CONFIDENTIAL
+
+# Extra content patterns, on top of the built-ins (SSN, card numbers, cloud keys, tokens, emails).
+patterns:
+  - name: employee_badge
+    regex: 'BADGE-\d{6}'
+    level: CONFIDENTIAL
+
+builtin_patterns: true
+min_value_length: 4      # shorter values are not tracked (too many false positives)

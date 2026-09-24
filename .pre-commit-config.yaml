@@ -1,0 +1,43 @@
+# pip install pre-commit && pre-commit install
+# Runs automatically on `git commit`; `pre-commit run --all-files` to check everything now.
+
+# research/ is a frozen historical snapshot (see research/README.md) -- its files must stay
+# byte-for-byte as they were, so no hook here (formatting, newline-fixing, ...) may touch them.
+exclude: ^research/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (src/flowguard)
+        entry: mypy src/flowguard
+        language: system
+        pass_filenames: false
+        files: ^src/flowguard/.*\.py$
+      - id: hygiene
+        name: no invisible/non-ASCII characters in source
+        # Catches the exact class of bug that bit this project repeatedly during development:
+        # a stray zero-width or fullwidth character written into a .py file by an editing tool.
+        entry: pytest tests/test_hygiene.py -q
+        language: system
+        pass_filenames: false
+        files: \.(py|md|yaml|yml|toml)$

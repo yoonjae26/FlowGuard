@@ -1,3 +1,31 @@
+# Python
 __pycache__/
-*.pyc
-data/employees.json.bak
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets and local config -- never commit these
+.env
+.env.*
+*.key
+*.pem
+
+# FlowGuard runtime output
+*.audit.jsonl
+audit.jsonl
+
+# Research
+research/data/employees.json.bak
+.coverage
+htmlcov/
+
+# Mutation testing (mutmut)
+mutants/
+.mutmut-cache
