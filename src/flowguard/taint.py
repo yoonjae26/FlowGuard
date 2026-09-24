@@ -190,7 +190,14 @@ class TaintRegistry:
                 index.setdefault(comp[i : i + _RUN], set()).add(norm)
         for source in {value, norm}:
             for algo in _HASHES:
-                self._digests[algo(source.encode()).hexdigest()] = entry
+                # MD5/SHA-1 here are not protecting this value -- they are precomputed lookup
+                # keys so a hash an agent *sends* can still be matched back to it (see the digest
+                # matching in scan()). Their known weaknesses (collision attacks) are irrelevant
+                # to that use; dropping them would only lose real detection coverage. `usedforsecurity`
+                # says so explicitly (also required for this to run under FIPS-mode OpenSSL).
+                # codeql[py/weak-sensitive-data-hashing]
+                digest = algo(source.encode(), usedforsecurity=False).hexdigest()
+                self._digests[digest] = entry
         return True
 
     def _continue_in_progress(
