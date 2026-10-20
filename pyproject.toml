@@ -31,7 +31,7 @@ dev = [
 ]
 research = ["openai>=1.0"]
 llm-eval = ["openai>=1.0"]
-mutation = ["mutmut>=3.0"]
+mutation = ["mutmut>=3.8.0"]
 
 [project.scripts]
 flowguard = "flowguard.cli:main"
